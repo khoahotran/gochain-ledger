@@ -3,6 +3,7 @@ package domain
 import (
 	"bytes"
 	"errors"
+	"fmt"
 	"log"
 
 	"github.com/dgraph-io/badger/v3"
@@ -13,6 +14,7 @@ const (
 	lastHashKey         = "lh"           // Key để lưu hash của block cuối cùng
 	utxoPrefix          = "utxo-"        // Prefix mới để lưu UTXO
 	contractStatePrefix = "contract-state-"
+	contractCodePrefix  = "contract-code-"
 )
 
 // Blockchain giữ con trỏ đến DB và hash cuối cùng
@@ -262,4 +264,39 @@ func (bc *Blockchain) GetContractState(contractAddress []byte, key []byte) ([]by
 		return nil, err
 	}
 	return value, nil
+}
+
+// (Dán vào cuối file domain/blockchain.go)
+
+// SetContractCode lưu code của một contract (key là ID của tx deploy)
+func (bc *Blockchain) SetContractCode(contractAddress []byte, code []byte) error {
+	return bc.Database.Update(func(txn *badger.Txn) error {
+		// Key = "contract-code-" + <địa chỉ contract>
+		dbKey := append([]byte(contractCodePrefix), contractAddress...)
+		return txn.Set(dbKey, code)
+	})
+}
+
+// GetContractCode lấy code của một contract
+func (bc *Blockchain) GetContractCode(contractAddress []byte) ([]byte, error) {
+	var code []byte
+	err := bc.Database.View(func(txn *badger.Txn) error {
+		dbKey := append([]byte(contractCodePrefix), contractAddress...)
+
+		item, err := txn.Get(dbKey)
+		if err == badger.ErrKeyNotFound {
+			return fmt.Errorf("không tìm thấy contract: %x", contractAddress)
+		}
+		if err != nil {
+			return err
+		}
+
+		code, err = item.ValueCopy(nil)
+		return err
+	})
+
+	if err != nil {
+		return nil, err
+	}
+	return code, nil
 }

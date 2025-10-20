@@ -1,5 +1,6 @@
 wallets/
 tmp/
+gochain-cli
 
 # env and local
 .env

@@ -28,6 +28,9 @@ service NodeService {
 
   // Tìm các UTXO có thể tiêu cho một địa chỉ
   rpc FindSpendableUTXOs (FindSpendableUTXOsRequest) returns (FindSpendableUTXOsResponse);
+
+  // Đọc một key từ state của contract
+  rpc GetContractState (GetContractStateRequest) returns (GetContractStateResponse);
 }
 
 // --- Định nghĩa Cấu trúc Dữ liệu (Messages) ---
@@ -49,6 +52,8 @@ message Transaction {
   bytes id = 1;
   repeated TxInput vin = 2;   // Danh sách các đầu vào
   repeated TxOutput vout = 3;  // Danh sách các đầu ra
+  int32 type = 4;    // Tương ứng với domain.TxType
+  bytes payload = 5; // Tương ứng với domain.Payload
 }
 
 message Block {
@@ -108,4 +113,14 @@ message GetBalanceRequest {
 
 message GetBalanceResponse {
   int64 balance = 1; // Số dư trả về
+}
+
+// --- Message cho việc đọc State ---
+message GetContractStateRequest {
+  string contract_address = 1; // Địa chỉ contract (dạng hex)
+  string key = 2;              // Key cần đọc
+}
+
+message GetContractStateResponse {
+  string value = 1; // Giá trị trả về (dạng string)
 }

@@ -29,6 +29,7 @@ const (
 	NodeService_GetKnownNodes_FullMethodName      = "/proto.NodeService/GetKnownNodes"
 	NodeService_GetBalance_FullMethodName         = "/proto.NodeService/GetBalance"
 	NodeService_FindSpendableUTXOs_FullMethodName = "/proto.NodeService/FindSpendableUTXOs"
+	NodeService_GetContractState_FullMethodName   = "/proto.NodeService/GetContractState"
 )
 
 // NodeServiceClient is the client API for NodeService service.
@@ -51,6 +52,8 @@ type NodeServiceClient interface {
 	GetBalance(ctx context.Context, in *GetBalanceRequest, opts ...grpc.CallOption) (*GetBalanceResponse, error)
 	// Tìm các UTXO có thể tiêu cho một địa chỉ
 	FindSpendableUTXOs(ctx context.Context, in *FindSpendableUTXOsRequest, opts ...grpc.CallOption) (*FindSpendableUTXOsResponse, error)
+	// Đọc một key từ state của contract
+	GetContractState(ctx context.Context, in *GetContractStateRequest, opts ...grpc.CallOption) (*GetContractStateResponse, error)
 }
 
 type nodeServiceClient struct {
@@ -130,6 +133,16 @@ func (c *nodeServiceClient) FindSpendableUTXOs(ctx context.Context, in *FindSpen
 	return out, nil
 }
 
+func (c *nodeServiceClient) GetContractState(ctx context.Context, in *GetContractStateRequest, opts ...grpc.CallOption) (*GetContractStateResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GetContractStateResponse)
+	err := c.cc.Invoke(ctx, NodeService_GetContractState_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // NodeServiceServer is the server API for NodeService service.
 // All implementations must embed UnimplementedNodeServiceServer
 // for forward compatibility.
@@ -150,6 +163,8 @@ type NodeServiceServer interface {
 	GetBalance(context.Context, *GetBalanceRequest) (*GetBalanceResponse, error)
 	// Tìm các UTXO có thể tiêu cho một địa chỉ
 	FindSpendableUTXOs(context.Context, *FindSpendableUTXOsRequest) (*FindSpendableUTXOsResponse, error)
+	// Đọc một key từ state của contract
+	GetContractState(context.Context, *GetContractStateRequest) (*GetContractStateResponse, error)
 	mustEmbedUnimplementedNodeServiceServer()
 }
 
@@ -177,6 +192,9 @@ func (UnimplementedNodeServiceServer) GetBalance(context.Context, *GetBalanceReq
 }
 func (UnimplementedNodeServiceServer) FindSpendableUTXOs(context.Context, *FindSpendableUTXOsRequest) (*FindSpendableUTXOsResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method FindSpendableUTXOs not implemented")
+}
+func (UnimplementedNodeServiceServer) GetContractState(context.Context, *GetContractStateRequest) (*GetContractStateResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetContractState not implemented")
 }
 func (UnimplementedNodeServiceServer) mustEmbedUnimplementedNodeServiceServer() {}
 func (UnimplementedNodeServiceServer) testEmbeddedByValue()                     {}
@@ -300,6 +318,24 @@ func _NodeService_FindSpendableUTXOs_Handler(srv interface{}, ctx context.Contex
 	return interceptor(ctx, in, info, handler)
 }
 
+func _NodeService_GetContractState_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetContractStateRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(NodeServiceServer).GetContractState(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: NodeService_GetContractState_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(NodeServiceServer).GetContractState(ctx, req.(*GetContractStateRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // NodeService_ServiceDesc is the grpc.ServiceDesc for NodeService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -326,6 +362,10 @@ var NodeService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "FindSpendableUTXOs",
 			Handler:    _NodeService_FindSpendableUTXOs_Handler,
+		},
+		{
+			MethodName: "GetContractState",
+			Handler:    _NodeService_GetContractState_Handler,
 		},
 	},
 	Streams: []grpc.StreamDesc{

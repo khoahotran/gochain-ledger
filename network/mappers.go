@@ -27,9 +27,11 @@ func MapDomainTransactionToProto(tx *domain.Transaction) *proto.Transaction {
 	}
 
 	return &proto.Transaction{
-		Id:   tx.ID,
-		Vin:  vin,
-		Vout: vout,
+		Id:      tx.ID,
+		Vin:     vin,
+		Vout:    vout,
+		Type:    int32(tx.Type),
+		Payload: tx.Payload,
 	}
 }
 
@@ -70,9 +72,11 @@ func MapProtoTransactionToDomain(tx *proto.Transaction) *domain.Transaction {
 	}
 
 	return &domain.Transaction{
-		ID:   tx.Id,
-		Vin:  vin,
-		Vout: vout,
+		ID:      tx.Id,
+		Vin:     vin,
+		Vout:    vout,
+		Type:    domain.TxType(tx.Type),
+		Payload: tx.Payload,
 	}
 }
 

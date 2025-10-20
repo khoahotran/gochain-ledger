@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/gob"
+	"encoding/hex"
 	"fmt"
 	"log"
 	"net"
@@ -184,4 +185,28 @@ func (s *Server) FindSpendableUTXOs(ctx context.Context, req *proto.FindSpendabl
 		AccumulatedAmount: acc,
 		Utxos:             protoUTXOs,
 	}, nil
+}
+
+// (Dán vào cuối file network/server.go)
+
+// GetContractState (Triển khai API mới)
+func (s *Server) GetContractState(ctx context.Context, req *proto.GetContractStateRequest) (*proto.GetContractStateResponse, error) {
+	log.Printf("Nhận được yêu cầu GetState cho contract: %s, key: %s", req.ContractAddress, req.Key)
+
+	contractAddressBytes, err := hex.DecodeString(req.ContractAddress)
+	if err != nil {
+		return nil, fmt.Errorf("địa chỉ contract không hợp lệ")
+	}
+
+	// Gọi hàm domain
+	value, err := s.Blockchain.GetContractState(contractAddressBytes, []byte(req.Key))
+	if err != nil {
+		return nil, fmt.Errorf("lỗi đọc CSDL: %v", err)
+	}
+
+	if value == nil {
+		return &proto.GetContractStateResponse{Value: ""}, nil // Trả về chuỗi rỗng nếu không tìm thấy
+	}
+
+	return &proto.GetContractStateResponse{Value: string(value)}, nil
 }

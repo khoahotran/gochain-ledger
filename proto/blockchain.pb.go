@@ -148,8 +148,10 @@ func (x *TxOutput) GetPubKeyHash() []byte {
 type Transaction struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Id            []byte                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
-	Vin           []*TxInput             `protobuf:"bytes,2,rep,name=vin,proto3" json:"vin,omitempty"`   // Danh sách các đầu vào
-	Vout          []*TxOutput            `protobuf:"bytes,3,rep,name=vout,proto3" json:"vout,omitempty"` // Danh sách các đầu ra
+	Vin           []*TxInput             `protobuf:"bytes,2,rep,name=vin,proto3" json:"vin,omitempty"`         // Danh sách các đầu vào
+	Vout          []*TxOutput            `protobuf:"bytes,3,rep,name=vout,proto3" json:"vout,omitempty"`       // Danh sách các đầu ra
+	Type          int32                  `protobuf:"varint,4,opt,name=type,proto3" json:"type,omitempty"`      // Tương ứng với domain.TxType
+	Payload       []byte                 `protobuf:"bytes,5,opt,name=payload,proto3" json:"payload,omitempty"` // Tương ứng với domain.Payload
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -201,6 +203,20 @@ func (x *Transaction) GetVin() []*TxInput {
 func (x *Transaction) GetVout() []*TxOutput {
 	if x != nil {
 		return x.Vout
+	}
+	return nil
+}
+
+func (x *Transaction) GetType() int32 {
+	if x != nil {
+		return x.Type
+	}
+	return 0
+}
+
+func (x *Transaction) GetPayload() []byte {
+	if x != nil {
+		return x.Payload
 	}
 	return nil
 }
@@ -724,6 +740,103 @@ func (x *GetBalanceResponse) GetBalance() int64 {
 	return 0
 }
 
+// --- Message cho việc đọc State ---
+type GetContractStateRequest struct {
+	state           protoimpl.MessageState `protogen:"open.v1"`
+	ContractAddress string                 `protobuf:"bytes,1,opt,name=contract_address,json=contractAddress,proto3" json:"contract_address,omitempty"` // Địa chỉ contract (dạng hex)
+	Key             string                 `protobuf:"bytes,2,opt,name=key,proto3" json:"key,omitempty"`                                                // Key cần đọc
+	unknownFields   protoimpl.UnknownFields
+	sizeCache       protoimpl.SizeCache
+}
+
+func (x *GetContractStateRequest) Reset() {
+	*x = GetContractStateRequest{}
+	mi := &file_proto_blockchain_proto_msgTypes[13]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetContractStateRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetContractStateRequest) ProtoMessage() {}
+
+func (x *GetContractStateRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_proto_blockchain_proto_msgTypes[13]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetContractStateRequest.ProtoReflect.Descriptor instead.
+func (*GetContractStateRequest) Descriptor() ([]byte, []int) {
+	return file_proto_blockchain_proto_rawDescGZIP(), []int{13}
+}
+
+func (x *GetContractStateRequest) GetContractAddress() string {
+	if x != nil {
+		return x.ContractAddress
+	}
+	return ""
+}
+
+func (x *GetContractStateRequest) GetKey() string {
+	if x != nil {
+		return x.Key
+	}
+	return ""
+}
+
+type GetContractStateResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Value         string                 `protobuf:"bytes,1,opt,name=value,proto3" json:"value,omitempty"` // Giá trị trả về (dạng string)
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GetContractStateResponse) Reset() {
+	*x = GetContractStateResponse{}
+	mi := &file_proto_blockchain_proto_msgTypes[14]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetContractStateResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetContractStateResponse) ProtoMessage() {}
+
+func (x *GetContractStateResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_proto_blockchain_proto_msgTypes[14]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetContractStateResponse.ProtoReflect.Descriptor instead.
+func (*GetContractStateResponse) Descriptor() ([]byte, []int) {
+	return file_proto_blockchain_proto_rawDescGZIP(), []int{14}
+}
+
+func (x *GetContractStateResponse) GetValue() string {
+	if x != nil {
+		return x.Value
+	}
+	return ""
+}
+
 var File_proto_blockchain_proto protoreflect.FileDescriptor
 
 const file_proto_blockchain_proto_rawDesc = "" +
@@ -739,11 +852,13 @@ const file_proto_blockchain_proto_rawDesc = "" +
 	"\bTxOutput\x12\x14\n" +
 	"\x05value\x18\x01 \x01(\x03R\x05value\x12 \n" +
 	"\fpub_key_hash\x18\x02 \x01(\fR\n" +
-	"pubKeyHash\"d\n" +
+	"pubKeyHash\"\x92\x01\n" +
 	"\vTransaction\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\fR\x02id\x12 \n" +
 	"\x03vin\x18\x02 \x03(\v2\x0e.proto.TxInputR\x03vin\x12#\n" +
-	"\x04vout\x18\x03 \x03(\v2\x0f.proto.TxOutputR\x04vout\"\xaf\x01\n" +
+	"\x04vout\x18\x03 \x03(\v2\x0f.proto.TxOutputR\x04vout\x12\x12\n" +
+	"\x04type\x18\x04 \x01(\x05R\x04type\x12\x18\n" +
+	"\apayload\x18\x05 \x01(\fR\apayload\"\xaf\x01\n" +
 	"\x05Block\x12\x1c\n" +
 	"\ttimestamp\x18\x01 \x01(\x03R\ttimestamp\x12&\n" +
 	"\x0fprev_block_hash\x18\x02 \x01(\fR\rprevBlockHash\x12\x12\n" +
@@ -774,7 +889,12 @@ const file_proto_blockchain_proto_rawDesc = "" +
 	"\x11GetBalanceRequest\x12\x18\n" +
 	"\aaddress\x18\x01 \x01(\tR\aaddress\".\n" +
 	"\x12GetBalanceResponse\x12\x18\n" +
-	"\abalance\x18\x01 \x01(\x03R\abalance2\x80\x03\n" +
+	"\abalance\x18\x01 \x01(\x03R\abalance\"V\n" +
+	"\x17GetContractStateRequest\x12)\n" +
+	"\x10contract_address\x18\x01 \x01(\tR\x0fcontractAddress\x12\x10\n" +
+	"\x03key\x18\x02 \x01(\tR\x03key\"0\n" +
+	"\x18GetContractStateResponse\x12\x14\n" +
+	"\x05value\x18\x01 \x01(\tR\x05value2\xd5\x03\n" +
 	"\vNodeService\x121\n" +
 	"\x0fSendTransaction\x12\x12.proto.Transaction\x1a\n" +
 	".proto.Ack\x12)\n" +
@@ -784,7 +904,8 @@ const file_proto_blockchain_proto_rawDesc = "" +
 	"\rGetKnownNodes\x12\x13.proto.EmptyRequest\x1a\x19.proto.KnownNodesResponse\x12A\n" +
 	"\n" +
 	"GetBalance\x12\x18.proto.GetBalanceRequest\x1a\x19.proto.GetBalanceResponse\x12Y\n" +
-	"\x12FindSpendableUTXOs\x12 .proto.FindSpendableUTXOsRequest\x1a!.proto.FindSpendableUTXOsResponseB\tZ\a./protob\x06proto3"
+	"\x12FindSpendableUTXOs\x12 .proto.FindSpendableUTXOsRequest\x1a!.proto.FindSpendableUTXOsResponse\x12S\n" +
+	"\x10GetContractState\x12\x1e.proto.GetContractStateRequest\x1a\x1f.proto.GetContractStateResponseB\tZ\a./protob\x06proto3"
 
 var (
 	file_proto_blockchain_proto_rawDescOnce sync.Once
@@ -798,7 +919,7 @@ func file_proto_blockchain_proto_rawDescGZIP() []byte {
 	return file_proto_blockchain_proto_rawDescData
 }
 
-var file_proto_blockchain_proto_msgTypes = make([]protoimpl.MessageInfo, 13)
+var file_proto_blockchain_proto_msgTypes = make([]protoimpl.MessageInfo, 15)
 var file_proto_blockchain_proto_goTypes = []any{
 	(*TxInput)(nil),                    // 0: proto.TxInput
 	(*TxOutput)(nil),                   // 1: proto.TxOutput
@@ -813,6 +934,8 @@ var file_proto_blockchain_proto_goTypes = []any{
 	(*KnownNodesResponse)(nil),         // 10: proto.KnownNodesResponse
 	(*GetBalanceRequest)(nil),          // 11: proto.GetBalanceRequest
 	(*GetBalanceResponse)(nil),         // 12: proto.GetBalanceResponse
+	(*GetContractStateRequest)(nil),    // 13: proto.GetContractStateRequest
+	(*GetContractStateResponse)(nil),   // 14: proto.GetContractStateResponse
 }
 var file_proto_blockchain_proto_depIdxs = []int32{
 	0,  // 0: proto.Transaction.vin:type_name -> proto.TxInput
@@ -825,14 +948,16 @@ var file_proto_blockchain_proto_depIdxs = []int32{
 	9,  // 7: proto.NodeService.GetKnownNodes:input_type -> proto.EmptyRequest
 	11, // 8: proto.NodeService.GetBalance:input_type -> proto.GetBalanceRequest
 	4,  // 9: proto.NodeService.FindSpendableUTXOs:input_type -> proto.FindSpendableUTXOsRequest
-	7,  // 10: proto.NodeService.SendTransaction:output_type -> proto.Ack
-	7,  // 11: proto.NodeService.AnnounceBlock:output_type -> proto.Ack
-	3,  // 12: proto.NodeService.GetBlocks:output_type -> proto.Block
-	10, // 13: proto.NodeService.GetKnownNodes:output_type -> proto.KnownNodesResponse
-	12, // 14: proto.NodeService.GetBalance:output_type -> proto.GetBalanceResponse
-	6,  // 15: proto.NodeService.FindSpendableUTXOs:output_type -> proto.FindSpendableUTXOsResponse
-	10, // [10:16] is the sub-list for method output_type
-	4,  // [4:10] is the sub-list for method input_type
+	13, // 10: proto.NodeService.GetContractState:input_type -> proto.GetContractStateRequest
+	7,  // 11: proto.NodeService.SendTransaction:output_type -> proto.Ack
+	7,  // 12: proto.NodeService.AnnounceBlock:output_type -> proto.Ack
+	3,  // 13: proto.NodeService.GetBlocks:output_type -> proto.Block
+	10, // 14: proto.NodeService.GetKnownNodes:output_type -> proto.KnownNodesResponse
+	12, // 15: proto.NodeService.GetBalance:output_type -> proto.GetBalanceResponse
+	6,  // 16: proto.NodeService.FindSpendableUTXOs:output_type -> proto.FindSpendableUTXOsResponse
+	14, // 17: proto.NodeService.GetContractState:output_type -> proto.GetContractStateResponse
+	11, // [11:18] is the sub-list for method output_type
+	4,  // [4:11] is the sub-list for method input_type
 	4,  // [4:4] is the sub-list for extension type_name
 	4,  // [4:4] is the sub-list for extension extendee
 	0,  // [0:4] is the sub-list for field type_name
@@ -849,7 +974,7 @@ func file_proto_blockchain_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_proto_blockchain_proto_rawDesc), len(file_proto_blockchain_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   13,
+			NumMessages:   15,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

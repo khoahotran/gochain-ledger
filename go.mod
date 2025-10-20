@@ -7,6 +7,7 @@ require (
 	github.com/go-redis/redis/v8 v8.11.5
 	github.com/mr-tron/base58 v1.2.0
 	github.com/spf13/cobra v1.10.1
+	github.com/yuin/gopher-lua v1.1.1
 	golang.org/x/crypto v0.43.0
 	golang.org/x/term v0.36.0
 	google.golang.org/grpc v1.76.0
@@ -29,7 +30,6 @@ require (
 	github.com/klauspost/compress v1.12.3 // indirect
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/spf13/pflag v1.0.9 // indirect
-	github.com/yuin/gopher-lua v1.1.1 // indirect
 	go.opencensus.io v0.22.5 // indirect
 	golang.org/x/net v0.45.0 // indirect
 	golang.org/x/sys v0.37.0 // indirect
