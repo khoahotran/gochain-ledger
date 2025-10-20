@@ -1,0 +1,33 @@
+wallets/
+tmp/
+
+# env and local
+.env
+.env.*
+*.env
+
+# execute file và artifacts
+/bin
+/vendor
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+
+# tools
+/tools/
+
+# Logs
+*.log
+logs/
+
+# Coverage data
+coverage.out
+coverage.txt
+
+# IDE/Editor specific
+.idea/
+.vscode/
+*.sublime-project
+*.sublime-workspace
