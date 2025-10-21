@@ -1,4 +1,5 @@
 # GoChain Ledger ⛓️
+[🇬🇧 English](./README.en.md) | [🇻🇳 Tiếng Việt](./README.md)
 
 [![Go Version](https://img.shields.io/badge/go-1.18%2B-blue.svg)](https://golang.org/)
 
