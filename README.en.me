@@ -1,0 +1,199 @@
+# GoChain Ledger ⛓️
+
+[![Go Version](https://img.shields.io/badge/go-1.18%2B-blue.svg)](https://golang.org/)
+
+A private blockchain platform built from scratch in **Golang**, inspired by the architectures of Bitcoin (UTXO, PoW) and Ethereum (Smart Contract).
+This project serves educational purposes and demonstrates the core concepts of blockchain technology.
+
+**➡️ Corresponding Frontend DApp:** [**gochain-frontend**](https://github.com/khoahotran/gochain-frontend)
+
+---
+
+## ✨ Main Features
+
+* **Blockchain Core:**
+
+  * **UTXO** (Unspent Transaction Output) model like Bitcoin.
+  * Simple **Proof-of-Work (PoW)** consensus mechanism.
+  * Persistent data storage using **BadgerDB** (Key-Value Store).
+* **P2P Network:**
+
+  * Node communication via **gRPC**.
+  * **Mempool** (Transaction Pool) uses **Redis** to share pending transactions.
+  * Miners automatically fetch transactions from the Mempool and mine new blocks.
+* **Smart Contracts:**
+
+  * Integrated **Lua Virtual Machine (Gopher-Lua)** for executing custom logic.
+  * Supports deploying and calling functions within contracts.
+  * Stores contract **state** in the database.
+* **Wallet Management:**
+
+  * Generate and manage **ECDSA** key pairs (curve P256).
+  * Wallet addresses encoded with **Base58Check**.
+  * Securely store wallets by **encrypting Private Keys** with password (AES + Scrypt) and saving to JSON files.
+* **Command Line Interface (CLI):**
+
+  * Built with **Cobra**.
+  * Commands: `init`, `createwallet`, `start` (server/miner mode), `balance`, `send`, `deploy`, `call`, `read`.
+* **Frontend Support:**
+
+  * Integrated **gRPC-Web Proxy** allowing DApp (React) to interact directly with the node.
+
+---
+
+## 🛠️ Technologies Used
+
+* **Language:** Go
+* **Database:** BadgerDB (Blockchain & State), Redis (Mempool)
+* **Network:** gRPC, Protocol Buffers
+* **CLI:** Cobra
+* **VM:** Gopher-Lua
+* **Crypto:** `crypto/ecdsa`, `crypto/sha256`, `golang.org/x/crypto/scrypt`, `crypto/aes`
+* **Encoding:** `encoding/json`, `encoding/gob`, `github.com/mr-tron/base58`
+* **Proxy:** `github.com/improbable-eng/grpc-web/go/grpcweb`
+
+---
+
+## 🚀 Getting Started
+
+### Environment Setup
+
+1. **Install Go:** Version 1.18 or higher.
+2. **Install `protoc`:** Protocol Buffers compiler (see [guide](https://grpc.io/docs/protoc-installation/)).
+3. **Install Go plugins for `protoc`:**
+
+   ```bash
+   go install google.golang.org/protobuf/cmd/protoc-gen-go@latest
+   go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@latest
+   ```
+4. **Install and run Redis Server:** (see [guide](https://redis.io/docs/getting-started/installation/)).
+   Make sure Redis is running on `localhost:6379`.
+
+### Run the Project
+
+1. **Clone the repository:**
+
+   ```bash
+   git clone https://github.com/khoahotran/gochain-ledger.git
+   cd gochain-ledger
+   ```
+2. **Download dependencies:**
+
+   ```bash
+   go mod tidy
+   ```
+3. **Compile Proto files:**
+
+   ```bash
+   # Compile for Go
+   protoc --go_out=. --go-grpc_out=. proto/blockchain.proto proto/public.proto
+   # Compile for Frontend
+   protoc \
+    --plugin=protoc-gen-ts=../gochain-frontend/node_modules/.bin/protoc-gen-ts \
+    --ts_out=client=grpc-web,mode=grpc-web-text:../gochain-frontend/src/proto \
+    proto/blockchain.proto proto/public.proto
+   ```
+4. **Build CLI application:**
+
+   ```bash
+   go build -o gochain-cli
+   ```
+5. **Use the CLI:**
+
+   * **Create your first wallet (Important: Save the address and set a password):**
+
+     ```bash
+     ./gochain-cli createwallet
+     ```
+
+     *(Wallet `.json` file will be stored in the `wallets/` folder)*
+
+   * **Initialize Blockchain (RUN ONCE ONLY):**
+
+     ```bash
+     ./gochain-cli init --address <YOUR_WALLET_ADDRESS>
+     ```
+
+   * **Start Node (Server + Miner):**
+
+     ```bash
+     # Run in Miner mode, rewards go to your wallet
+     ./gochain-cli start --miner <YOUR_WALLET_ADDRESS>
+     # Node listens on gRPC-Web port 3000 and pure gRPC port 50051
+     ```
+
+     *(Run this node in a separate terminal window)*
+
+   * **Check balance (in another terminal):**
+
+     ```bash
+     ./gochain-cli balance --address <WALLET_ADDRESS>
+     # (Defaults to localhost:50051)
+     ```
+
+   * **Send transaction (in another terminal):**
+
+     ```bash
+     ./gochain-cli send --from <SENDER_WALLET> --to <RECEIVER_WALLET> --amount <AMOUNT>
+     # You’ll be prompted to enter the sender wallet’s password
+     ```
+
+   * **Deploy Smart Contract (in another terminal):**
+
+     ```bash
+     # Example with counter.lua
+     ./gochain-cli deploy --from <YOUR_WALLET> --file ./counter.lua
+     # Note down the Contract Address (it’s the transaction ID)
+     ```
+
+   * **Call Smart Contract function (in another terminal):**
+
+     ```bash
+     # Example: calling increment() on the counter contract
+     ./gochain-cli call --from <YOUR_WALLET> --contract <CONTRACT_ADDRESS> --function "increment" --args "[]"
+     ```
+
+   * **Read Smart Contract state (in another terminal):**
+
+     ```bash
+     # Example: read key "counter"
+     ./gochain-cli read --contract <CONTRACT_ADDRESS> --key "counter"
+     ```
+
+---
+
+## 🏗️ Project Structure
+
+* **`cmd/`**: Source for CLI commands (Cobra).
+* **`domain/`**: Core data structures (Block, Transaction, Wallet...) and fundamental business logic (PoW, UTXO).
+* **`network/`**: P2P networking logic (gRPC Server, Client, Miner) and Public API (gRPC-Web).
+* **`application/`**: Use Cases coordinating operations across layers.
+* **`wallet/`**: Logic for encryption, storage, and loading wallet files.
+* **`vm/`**: Lua Virtual Machine (Gopher-Lua) and Go integration bridge.
+* **`proto/`**: Protocol Buffers (`.proto`) definitions and generated Go code.
+* **`main.go`**: Entry point for CLI application.
+* **`tmp/blocks/`**: Folder containing BadgerDB database.
+* **`wallets/`**: Folder containing encrypted wallet `.json` files.
+
+---
+
+## 🏛️ Architecture
+
+The project follows a clear Client-Server architecture:
+
+* Only the **`start`** process is allowed to write to the BadgerDB database.
+* All other CLI commands (`send`, `balance`, `deploy`...) act as **clients**, sending requests to the running node via **pure gRPC** (default port 50051).
+* **Frontend DApp** also acts as a client, sending requests through **gRPC-Web** (default port 3000).
+  The `start` server includes a built-in proxy to handle these requests.
+
+Hash synchronization between Go (backend) and JavaScript (frontend) for transaction signing/verification is achieved through **JSON serialization** (with `[]byte` encoded as Base64 and sorted keys) on both sides when calculating the hash for signing.
+
+---
+
+## 📄 License
+
+[MIT](LICENSE)
+
+---
+
+`File generated by AI. If you have any questions, please don’t bother the owner :))`
