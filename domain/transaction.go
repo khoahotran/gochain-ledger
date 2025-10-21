@@ -11,6 +11,7 @@ import (
 	"fmt"
 	"log"
 	"math/big"
+	"sort"
 )
 
 // TxType đại diện cho loại giao dịch
@@ -245,32 +246,60 @@ func (tx *Transaction) Verify(prevTxs map[string]Transaction) bool {
 	return true // All inputs verified
 }
 
+// Sửa lại hàm Hash()
 func (tx *Transaction) Hash() []byte {
-	// Tạo bản sao trung gian với kiểu dữ liệu JSON phù hợp
-	jsonCopy := jsonTransaction{
-		ID:      []byte{}, // Exclude ID
-		Vin:     make([]TxInput, len(tx.Vin)),
-		Vout:    make([]jsonTxOutput, len(tx.Vout)),
-		Type:    tx.Type,
-		Payload: tx.Payload,
+	// Tạo map để marshal JSON, đảm bảo thứ tự field nhất quán
+	// và []byte được encode thành Base64 tự động
+	m := map[string]interface{}{
+		"id":      []byte{}, // Exclude ID (theo logic cũ)
+		"vin":     make([]map[string]interface{}, len(tx.Vin)),
+		"vout":    make([]map[string]interface{}, len(tx.Vout)),
+		"type":    tx.Type,
+		"payload": tx.Payload, // Sẽ tự encode Base64
 	}
 
-	// Copy Vin (Signature và PublicKey đã được nil ở TrimmedCopy)
-	copy(jsonCopy.Vin, tx.Vin)
-
-	// Copy Vout, chuyển đổi Value sang string
-	for i, out := range tx.Vout {
-		jsonCopy.Vout[i] = jsonTxOutput{
-			Value:      fmt.Sprintf("%d", out.Value), // Convert int64 to string
-			PubKeyHash: out.PubKeyHash,
+	// Populate Vin (Signature rỗng, PublicKey là PubKeyHash đã gán từ Sign/Verify)
+	for i, vin := range tx.Vin {
+		m["vin"].([]map[string]interface{})[i] = map[string]interface{}{
+			"TxID":      vin.TxID, // Sẽ tự encode Base64
+			"VoutIndex": vin.VoutIndex,
+			"Signature": []byte{},      // Rỗng
+			"PublicKey": vin.PublicKey, // Đây là PubKeyHash (sẽ tự encode Base64)
 		}
 	}
 
-	// Marshal bản sao JSON này
-	jsonData, err := json.Marshal(jsonCopy)
-	if err != nil {
-		Handle(fmt.Errorf("failed to marshal transaction to JSON for hashing: %v", err))
+	// Populate Vout (Value là string)
+	for i, out := range tx.Vout {
+		m["vout"].([]map[string]interface{})[i] = map[string]interface{}{
+			"Value":      fmt.Sprintf("%d", out.Value), // Value dạng string
+			"PubKeyHash": out.PubKeyHash,               // Sẽ tự encode Base64
+		}
 	}
+
+	// Marshal map này (thứ tự key sẽ được sort tự động bởi json.Marshal)
+	jsonData, err := json.Marshal(m)
+	if err != nil {
+		Handle(fmt.Errorf("failed to marshal transaction map to JSON for hashing: %v", err))
+	}
+
+	// --- LOGGING ---
+	// Tạo map keys để sort giống JS
+	keys := make([]string, 0, len(m))
+	for k := range m {
+		keys = append(keys, k)
+	}
+	sort.Strings(keys)
+	// Tạo lại json string với keys đã sort (chỉ để log)
+	sortedMap := make(map[string]interface{})
+	for _, k := range keys {
+		sortedMap[k] = m[k]
+	}
+	logJsonData, _ := json.MarshalIndent(sortedMap, "", "  ") // Pretty print for debug
+
+	fmt.Println("--- Backend JSON Hashed ---")
+	fmt.Println(string(logJsonData)) // LOG JSON RA
+	fmt.Println("---------------------------")
+	// --- END LOGGING ---
 
 	hash := sha256.Sum256(jsonData)
 	return hash[:]
