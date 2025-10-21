@@ -61,6 +61,6 @@ func init() {
 	callCmd.Flags().String("contract", "", "Địa chỉ Contract (ID của TX deploy)")
 	callCmd.Flags().String("function", "", "Tên hàm Lua để gọi")
 	callCmd.Flags().String("args", "[]", "Các tham số (dạng JSON array, ví dụ: '[\"hello\", 123]')")
-	callCmd.Flags().String("node", "localhost:3000", "Địa chỉ node đang chạy")
+	callCmd.Flags().String("node", "localhost:50051", "Địa chỉ node đang chạy")
 	rootCmd.AddCommand(callCmd)
 }

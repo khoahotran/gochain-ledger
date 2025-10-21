@@ -49,6 +49,6 @@ var readCmd = &cobra.Command{
 func init() {
 	readCmd.Flags().String("contract", "", "Địa chỉ Contract (ID của TX deploy)")
 	readCmd.Flags().String("key", "", "Tên key cần đọc")
-	readCmd.Flags().String("node", "localhost:3000", "Địa chỉ node đang chạy")
+	readCmd.Flags().String("node", "localhost:50051", "Địa chỉ node đang chạy")
 	rootCmd.AddCommand(readCmd)
 }

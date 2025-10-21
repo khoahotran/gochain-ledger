@@ -52,7 +52,7 @@ func init() {
 	sendCmd.Flags().String("from", "", "Địa chỉ ví gửi (tên file wallet)")
 	sendCmd.Flags().String("to", "", "Địa chỉ ví nhận")
 	sendCmd.Flags().Int64("amount", 0, "Số tiền")
-	sendCmd.Flags().String("node", "localhost:3000", "Địa chỉ node đang chạy")
+	sendCmd.Flags().String("node", "localhost:50051", "Địa chỉ node đang chạy")
 
 	// XÓA flag --key
 	// sendCmd.Flags().String("key", "", "...")

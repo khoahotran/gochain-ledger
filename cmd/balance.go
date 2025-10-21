@@ -53,6 +53,6 @@ var getBalanceCmd = &cobra.Command{
 func init() {
 	getBalanceCmd.Flags().String("address", "", "Địa chỉ ví cần kiểm tra")
 	// Thêm flag --node
-	getBalanceCmd.Flags().String("node", "localhost:3000", "Địa chỉ node đang chạy")
+	getBalanceCmd.Flags().String("node", "localhost:50051", "Địa chỉ node đang chạy")
 	rootCmd.AddCommand(getBalanceCmd)
 }

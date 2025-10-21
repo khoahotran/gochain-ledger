@@ -54,6 +54,6 @@ var deployCmd = &cobra.Command{
 func init() {
 	deployCmd.Flags().String("from", "", "Địa chỉ ví gửi (chủ sở hữu)")
 	deployCmd.Flags().String("file", "", "Đường dẫn đến file .lua của contract")
-	deployCmd.Flags().String("node", "localhost:3000", "Địa chỉ node đang chạy")
+	deployCmd.Flags().String("node", "localhost:50051", "Địa chỉ node đang chạy")
 	rootCmd.AddCommand(deployCmd)
 }

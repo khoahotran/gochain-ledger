@@ -7,6 +7,8 @@ import (
 	"crypto/rand"
 	"crypto/sha256"
 	"encoding/gob"
+	"encoding/json"
+	"fmt"
 	"log"
 	"math/big"
 )
@@ -19,6 +21,21 @@ const (
 	TxTypeContractDeploy TxType = 1    // 1: Triển khai Smart Contract
 	TxTypeContractCall   TxType = 2    // 2: Gọi hàm Smart Contract
 )
+
+// jsonTxOutput is used for consistent JSON hashing with frontend
+type jsonTxOutput struct {
+	Value      string `json:"value"` // Serialize int64 as string
+	PubKeyHash []byte `json:"pubKeyHash"`
+}
+
+// jsonTransaction is used for consistent JSON hashing with frontend
+type jsonTransaction struct {
+	ID      []byte         `json:"id"` // Still exclude during hash
+	Vin     []TxInput      `json:"vin"`
+	Vout    []jsonTxOutput `json:"vout"` // Use the custom output type
+	Type    TxType         `json:"type"`
+	Payload []byte         `json:"payload"`
+}
 
 // TxInput đại diện cho một đầu vào của giao dịch
 type TxInput struct {
@@ -115,101 +132,146 @@ func (tx *Transaction) TrimmedCopy() Transaction {
 		inputs = append(inputs, TxInput{
 			TxID:      vin.TxID,
 			VoutIndex: vin.VoutIndex,
-			Signature: nil, // Quan trọng
-			PublicKey: nil, // Quan trọng
+			Signature: nil, // Omits Signature
+			PublicKey: nil, // Omits PublicKey, crucial for JSON consistency
 		})
 	}
+	outputs := tx.Vout // Outputs don't change
 
-	outputs := tx.Vout // Outputs không đổi
-
-	return Transaction{ID: tx.ID, Vin: inputs, Vout: outputs}
+	// Ensure Type and Payload are included
+	return Transaction{
+		ID:      tx.ID, // Keep ID for structure, though it's ignored in Hash()
+		Vin:     inputs,
+		Vout:    outputs,
+		Type:    tx.Type,
+		Payload: tx.Payload,
+	}
 }
 
-// Sign ký vào transaction
+// Modify Sign to prepare data correctly for JSON hashing
 func (tx *Transaction) Sign(privKey ecdsa.PrivateKey, prevTxs map[string]Transaction) {
 	if tx.IsCoinbase() {
 		return
 	}
 
-	// Tạo bản sao để ký
-	txCopy := tx.TrimmedCopy()
+	txCopy := tx.TrimmedCopy() // Creates copy with nil Sig/PubKey
 
-	// Duyệt qua từng input và ký
 	for inID, vin := range txCopy.Vin {
-		prevTx := prevTxs[string(vin.TxID)] // Lấy transaction chứa output cũ
-		if prevTx.ID == nil {
-			log.Panic("LỖI: Không tìm thấy transaction tham chiếu")
+		prevTx := prevTxs[string(vin.TxID)]
+		if len(prevTx.ID) == 0 { // Check if map lookup failed
+			Handle(fmt.Errorf("ERROR: Referenced transaction not found: %x", vin.TxID))
 		}
-
-		// Lấy output cũ mà input này tham chiếu
 		prevOut := prevTx.Vout[vin.VoutIndex]
 
-		// Gán PubKeyHash của output cũ vào PublicKey (để hash)
-		// Đây là phần dữ liệu sẽ được ký
+		// For JSON hashing consistency with frontend:
+		// Temporarily put the PubKeyHash into the PublicKey field of the input *copy*
+		// that will be marshaled to JSON.
 		txCopy.Vin[inID].PublicKey = prevOut.PubKeyHash
 
-		// Hash bản sao transaction
-		txCopy.SetID() // Dùng ID làm dữ liệu để hash
-		dataToSign := txCopy.ID
+		// Use the updated Hash() method which now uses JSON
+		dataToSign := txCopy.Hash()
 
-		// Ký
+		// Reset the PublicKey field in the copy *after* hashing
+		// so it doesn't interfere with the next input's hash
+		txCopy.Vin[inID].PublicKey = nil
+
+		// Sign the hash
 		r, s, err := ecdsa.Sign(rand.Reader, &privKey, dataToSign)
-		if err != nil {
-			log.Panic(err)
-		}
+		Handle(err)
 		signature := append(r.Bytes(), s.Bytes()...)
 
-		// Gán chữ ký và PublicKey thật vào transaction gốc (không phải bản copy)
+		// Set Signature and the *actual* PublicKey on the *original* transaction's input
 		tx.Vin[inID].Signature = signature
-		// Lấy full public key (X và Y) từ private key
 		fullPublicKey := append(privKey.PublicKey.X.Bytes(), privKey.PublicKey.Y.Bytes()...)
 		tx.Vin[inID].PublicKey = fullPublicKey
-		// Xóa PubKeyHash trong bản copy để chuẩn bị cho vòng lặp input tiếp theo
-		txCopy.Vin[inID].PublicKey = nil
 	}
 }
 
-// Verify xác thực giao dịch
+// Modify Verify to prepare data correctly for JSON hashing
 func (tx *Transaction) Verify(prevTxs map[string]Transaction) bool {
 	if tx.IsCoinbase() {
 		return true
 	}
 
-	txCopy := tx.TrimmedCopy()
+	txCopy := tx.TrimmedCopy() // Creates copy with nil Sig/PubKey
 	curve := elliptic.P256()
 
-	for inID, vin := range tx.Vin {
+	for inID, vin := range tx.Vin { // Iterate original tx inputs to get Sig/PubKey
 		prevTx := prevTxs[string(vin.TxID)]
-		if prevTx.ID == nil {
-			log.Panic("LỖI: Không tìm thấy transaction tham chiếu")
+		if len(prevTx.ID) == 0 { // Check if map lookup failed
+			Handle(fmt.Errorf("ERROR: Referenced transaction not found: %x", vin.TxID))
+			return false // Or handle error appropriately
 		}
-
 		prevOut := prevTx.Vout[vin.VoutIndex]
 
-		// Chuẩn bị dữ liệu giống hệt như lúc ký
+		// Prepare the copy exactly like in Sign for hashing
 		txCopy.Vin[inID].PublicKey = prevOut.PubKeyHash
-		txCopy.SetID()
-		dataToVerify := txCopy.ID
 
-		// Tách chữ ký
+		// Use the updated Hash() method (uses JSON)
+		dataToVerify := txCopy.Hash()
+
+		// Reset PublicKey in copy *after* hashing
+		txCopy.Vin[inID].PublicKey = nil
+
+		// --- Signature and Public Key Reconstruction (Same as before) ---
+		if len(vin.Signature) == 0 || len(vin.PublicKey) == 0 {
+			return false
+		} // Basic check
+
 		sigLen := len(vin.Signature)
+		if sigLen != 64 {
+			return false
+		} // Assuming P256 -> 32 byte R + 32 byte S
 		r, s := big.Int{}, big.Int{}
-		r.SetBytes(vin.Signature[:(sigLen / 2)])
-		s.SetBytes(vin.Signature[(sigLen / 2):])
+		r.SetBytes(vin.Signature[:32])
+		s.SetBytes(vin.Signature[32:])
 
-		// Tách public key
 		keyLen := len(vin.PublicKey)
+		// Assuming uncompressed P256 key (1 byte prefix + 32 byte X + 32 byte Y = 65 bytes)
+		// OR compressed (33 bytes). Let's assume uncompressed was stored.
+		// If only X,Y was stored (64 bytes):
+		if keyLen != 64 {
+			return false
+		} // Adjust if you store compressed keys
 		x, y := big.Int{}, big.Int{}
-		x.SetBytes(vin.PublicKey[:(keyLen / 2)])
-		y.SetBytes(vin.PublicKey[(keyLen / 2):])
+		x.SetBytes(vin.PublicKey[:32])
+		y.SetBytes(vin.PublicKey[32:])
 
 		rawPubKey := ecdsa.PublicKey{Curve: curve, X: &x, Y: &y}
 		if !ecdsa.Verify(&rawPubKey, dataToVerify, &r, &s) {
-			return false // Xác thực thất bại
+			return false // Verification failed
 		}
+	}
+	return true // All inputs verified
+}
 
-		txCopy.Vin[inID].PublicKey = nil
+func (tx *Transaction) Hash() []byte {
+	// Tạo bản sao trung gian với kiểu dữ liệu JSON phù hợp
+	jsonCopy := jsonTransaction{
+		ID:      []byte{}, // Exclude ID
+		Vin:     make([]TxInput, len(tx.Vin)),
+		Vout:    make([]jsonTxOutput, len(tx.Vout)),
+		Type:    tx.Type,
+		Payload: tx.Payload,
 	}
 
-	return true
+	// Copy Vin (Signature và PublicKey đã được nil ở TrimmedCopy)
+	copy(jsonCopy.Vin, tx.Vin)
+
+	// Copy Vout, chuyển đổi Value sang string
+	for i, out := range tx.Vout {
+		jsonCopy.Vout[i] = jsonTxOutput{
+			Value:      fmt.Sprintf("%d", out.Value), // Convert int64 to string
+			PubKeyHash: out.PubKeyHash,
+		}
+	}
+
+	// Marshal bản sao JSON này
+	jsonData, err := json.Marshal(jsonCopy)
+	if err != nil {
+		Handle(fmt.Errorf("failed to marshal transaction to JSON for hashing: %v", err))
+	}
+
+	hash := sha256.Sum256(jsonData)
+	return hash[:]
 }
