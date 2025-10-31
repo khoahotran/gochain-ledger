@@ -18,39 +18,32 @@ import (
 )
 
 const (
-	walletDir    = "wallets" // Thư mục lưu ví
+	walletDir    = "wallets"
 	scryptN      = 16384
 	scryptR      = 8
 	scryptP      = 1
-	scryptKeyLen = 32 // 32 bytes = 256-bit key
+	scryptKeyLen = 32
 )
 
-// WalletFile là struct được lưu vào file JSON
-// Nó chứa private key ĐÃ ĐƯỢC MÃ HÓA
 type WalletFile struct {
 	Address      string `json:"address"`
 	PublicKey    []byte `json:"public_key"`
-	EncryptedKey []byte `json:"encrypted_key"` // Private key đã mã hóa
-	Salt         []byte `json:"salt"`          // Salt dùng cho scrypt
+	EncryptedKey []byte `json:"encrypted_key"`
+	Salt         []byte `json:"salt"`
 }
 
-// --- Logic Mã hóa / Giải mã ---
-
-// encryptKey mã hóa private key bằng mật khẩu
 func EncryptKey(privKey *ecdsa.PrivateKey, password string) ([]byte, []byte, error) {
-	// 1. Tạo Salt ngẫu nhiên
+
 	salt := make([]byte, 16)
 	if _, err := io.ReadFull(rand.Reader, salt); err != nil {
 		return nil, nil, err
 	}
 
-	// 2. Tạo khóa AES từ mật khẩu và salt (dùng scrypt)
 	aesKey, err := scrypt.Key([]byte(password), salt, scryptN, scryptR, scryptP, scryptKeyLen)
 	if err != nil {
 		return nil, nil, err
 	}
 
-	// 3. Mã hóa private key (bytes)
 	block, err := aes.NewCipher(aesKey)
 	if err != nil {
 		return nil, nil, err
@@ -66,22 +59,19 @@ func EncryptKey(privKey *ecdsa.PrivateKey, password string) ([]byte, []byte, err
 		return nil, nil, err
 	}
 
-	// Dùng private key D (dạng bytes)
 	plaintext := privKey.D.Bytes()
 	ciphertext := gcm.Seal(nonce, nonce, plaintext, nil)
 
 	return ciphertext, salt, nil
 }
 
-// decryptKey giải mã private key
 func (wf *WalletFile) decryptKey(password string) (*ecdsa.PrivateKey, error) {
-	// 1. Tạo lại khóa AES từ mật khẩu và salt đã lưu
+
 	aesKey, err := scrypt.Key([]byte(password), wf.Salt, scryptN, scryptR, scryptP, scryptKeyLen)
 	if err != nil {
 		return nil, err
 	}
 
-	// 2. Giải mã
 	block, err := aes.NewCipher(aesKey)
 	if err != nil {
 		return nil, err
@@ -100,11 +90,10 @@ func (wf *WalletFile) decryptKey(password string) (*ecdsa.PrivateKey, error) {
 	nonce, ciphertext := wf.EncryptedKey[:nonceSize], wf.EncryptedKey[nonceSize:]
 	plaintext, err := gcm.Open(nil, nonce, ciphertext, nil)
 	if err != nil {
-		// Lỗi này thường là do sai mật khẩu!
+
 		return nil, fmt.Errorf("giải mã thất bại (sai mật khẩu?)")
 	}
 
-	// 3. Tạo lại đối tượng ecdsa.PrivateKey
 	privKey := new(ecdsa.PrivateKey)
 	privKey.D = new(big.Int).SetBytes(plaintext)
 	privKey.PublicKey.Curve = elliptic.P256()
@@ -113,16 +102,12 @@ func (wf *WalletFile) decryptKey(password string) (*ecdsa.PrivateKey, error) {
 	return privKey, nil
 }
 
-// --- Logic Lưu / Tải ---
-
-// SaveLưu file ví vào thư mục 'wallets/'
 func (wf *WalletFile) Save() error {
-	// Đảm bảo thư mục "wallets" tồn tại
+
 	if err := os.MkdirAll(walletDir, 0755); err != nil {
 		return err
 	}
 
-	// Tên file là ADDR.json
 	filename := filepath.Join(walletDir, fmt.Sprintf("%s.json", wf.Address))
 
 	data, err := json.MarshalIndent(wf, "", "  ")
@@ -133,13 +118,12 @@ func (wf *WalletFile) Save() error {
 	return os.WriteFile(filename, data, 0644)
 }
 
-// LoadTải file ví
 func Load(address string) (*WalletFile, error) {
 	filename := filepath.Join(walletDir, fmt.Sprintf("%s.json", address))
 
 	data, err := os.ReadFile(filename)
 	if err != nil {
-		// Lỗi này thường là do ví không tồn tại
+
 		return nil, fmt.Errorf("ví %s không tìm thấy", address)
 	}
 
@@ -151,7 +135,6 @@ func Load(address string) (*WalletFile, error) {
 	return &wf, nil
 }
 
-// LoadAndDecrypt tải ví và giải mã
 func LoadAndDecrypt(address, password string) (*domain.Wallet, error) {
 	wf, err := Load(address)
 	if err != nil {
@@ -163,7 +146,6 @@ func LoadAndDecrypt(address, password string) (*domain.Wallet, error) {
 		return nil, err
 	}
 
-	// Trả về domain.Wallet (dùng cho logic nghiệp vụ)
 	return &domain.Wallet{
 		PrivateKey: *privKey,
 		PublicKey:  wf.PublicKey,

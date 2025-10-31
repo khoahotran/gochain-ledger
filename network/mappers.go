@@ -2,10 +2,8 @@ package network
 
 import (
 	"github.com/khoahotran/gochain-ledger/domain"
-	"github.com/khoahotran/gochain-ledger/proto" // Đường dẫn đến proto của bạn
+	"github.com/khoahotran/gochain-ledger/proto"
 )
-
-// --- Domain -> Proto ---
 
 func MapDomainTransactionToProto(tx *domain.Transaction) *proto.Transaction {
 	vin := make([]*proto.TxInput, len(tx.Vin))
@@ -49,8 +47,6 @@ func MapDomainBlockToProto(b *domain.Block) *proto.Block {
 		Nonce:         b.Nonce,
 	}
 }
-
-// --- Proto -> Domain ---
 
 func MapProtoTransactionToDomain(tx *proto.Transaction) *domain.Transaction {
 	vin := make([]domain.TxInput, len(tx.Vin))

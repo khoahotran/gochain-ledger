@@ -7,9 +7,9 @@ import (
 )
 
 func main() {
-	// Khi chạy, luôn dọn dẹp (đóng DB) khi thoát
+
 	defer func() {
-		// (Chúng ta sẽ thêm logic đóng DB ở đây sau)
+
 	}()
 
 	if err := cmd.Execute(); err != nil {

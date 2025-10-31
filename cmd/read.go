@@ -24,7 +24,6 @@ var readCmd = &cobra.Command{
 			Handle(errors.New("Flag --contract, --key, --node là bắt buộc"))
 		}
 
-		// --- Logic gRPC Client ---
 		conn, err := grpc.Dial(nodeAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
 		if err != nil {
 			log.Fatalf("Không thể kết nối: %v", err)

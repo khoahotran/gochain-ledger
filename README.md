@@ -79,7 +79,7 @@ Một nền tảng blockchain private được xây dựng từ đầu bằng **
     # Biên dịch cho Frontend
     protoc \
      --plugin=protoc-gen-ts=../gochain-frontend/node_modules/.bin/protoc-gen-ts \
-     --ts_out=client=grpc-web,mode=grpc-web-text:../gochain-frontend/src/proto \
+     --ts_out=client=grpc-web,mode=grpc-web-text:../gochain-frontend/src/ \
      proto/blockchain.proto proto/public.proto
     ```
 4.  **Biên dịch ứng dụng CLI:**

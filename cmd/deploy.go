@@ -4,7 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"log"
-	"os" // IMPORT MỚI
+	"os"
 	"syscall"
 
 	"github.com/khoahotran/gochain-ledger/application"
@@ -18,20 +18,18 @@ var deployCmd = &cobra.Command{
 	Short: "Triển khai một Smart Contract lên blockchain",
 	Run: func(cmd *cobra.Command, args []string) {
 		from, _ := cmd.Flags().GetString("from")
-		filePath, _ := cmd.Flags().GetString("file") // Flag mới
+		filePath, _ := cmd.Flags().GetString("file")
 		nodeAddr, _ := cmd.Flags().GetString("node")
 
 		if from == "" || filePath == "" || nodeAddr == "" {
 			Handle(errors.New("Flag --from, --file, --node là bắt buộc"))
 		}
 
-		// 1. Đọc code từ file
 		code, err := os.ReadFile(filePath)
 		if err != nil {
 			Handle(fmt.Errorf("không đọc được file: %v", err))
 		}
 
-		// 2. Yêu cầu mật khẩu
 		fmt.Printf("Nhập mật khẩu cho ví '%s': ", from)
 		bytePassword, err := term.ReadPassword(int(syscall.Stdin))
 		if err != nil {
@@ -40,13 +38,11 @@ var deployCmd = &cobra.Command{
 		password := string(bytePassword)
 		fmt.Println()
 
-		// 3. Tải ví
 		loadedWallet, err := wallet.LoadAndDecrypt(from, password)
 		if err != nil {
 			Handle(err)
 		}
 
-		// 4. Gọi Use Case
 		application.DeployContractUseCase(from, code, loadedWallet, nodeAddr)
 	},
 }

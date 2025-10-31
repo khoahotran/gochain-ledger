@@ -1,8 +1,6 @@
 package cmd
 
 import (
-
-	// Cần để parse private key
 	"errors"
 	"fmt"
 	"log"
@@ -27,23 +25,20 @@ var sendCmd = &cobra.Command{
 			Handle(errors.New("Flag --from, --to, --amount, --key, --node là bắt buộc"))
 		}
 
-		// (THAY ĐỔI) Yêu cầu mật khẩu để giải mã ví
 		fmt.Printf("Nhập mật khẩu cho ví '%s': ", from)
 		bytePassword, err := term.ReadPassword(int(syscall.Stdin))
 		if err != nil {
 			log.Fatalf("Lỗi khi nhập mật khẩu: %v", err)
 		}
 		password := string(bytePassword)
-		fmt.Println() // Thêm dòng mới
+		fmt.Println()
 
-		// Tải ví đã mã hóa và giải mã
 		loadedWallet, err := wallet.LoadAndDecrypt(from, password)
 		if err != nil {
-			// Lỗi này có thể do sai mật khẩu hoặc không tìm thấy file
+
 			Handle(err)
 		}
 
-		// TRUYỀN ví đã giải mã vào UseCase
 		application.SendUseCase(from, to, amount, loadedWallet, nodeAddr)
 	},
 }
@@ -53,9 +48,6 @@ func init() {
 	sendCmd.Flags().String("to", "", "Địa chỉ ví nhận")
 	sendCmd.Flags().Int64("amount", 0, "Số tiền")
 	sendCmd.Flags().String("node", "localhost:50051", "Địa chỉ node đang chạy")
-
-	// XÓA flag --key
-	// sendCmd.Flags().String("key", "", "...")
 
 	rootCmd.AddCommand(sendCmd)
 }

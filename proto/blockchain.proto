@@ -1,59 +1,59 @@
-  // Sử dụng cú pháp proto3
+  
   syntax = "proto3";
 
-  // Tên package Go sẽ được tạo ra
+  
   option go_package = "./proto";
 
-  // Tên package của Protobuf
+  
   package proto;
 
-  // Định nghĩa Dịch vụ Node (API)
-  // Đây là các hàm mà một node có thể gọi trên node khác
+  
+  
   service NodeService {
-    // Gửi một giao dịch mới đến mempool của node
+    
     rpc SendTransaction (Transaction) returns (Ack);
 
-    // Thông báo một block mới đã được đào
+    
     rpc AnnounceBlock (Block) returns (Ack);
 
-    // Yêu cầu đồng bộ: "Gửi cho tôi các block kể từ block_hash này"
-    // Dùng 'stream' để máy chủ có thể gửi nhiều block liên tục
+    
+    
     rpc GetBlocks (GetBlocksRequest) returns (stream Block);
 
-    // Yêu cầu danh sách các node (peers) mà node này biết
+    
     rpc GetKnownNodes (EmptyRequest) returns (KnownNodesResponse);
 
-    // Yêu cầu lấy số dư của một địa chỉ
+    
     rpc GetBalance (GetBalanceRequest) returns (GetBalanceResponse);
 
-    // Tìm các UTXO có thể tiêu cho một địa chỉ
+    
     rpc FindSpendableUTXOs (FindSpendableUTXOsRequest) returns (FindSpendableUTXOsResponse);
 
-    // Đọc một key từ state của contract
+    
     rpc GetContractState (GetContractStateRequest) returns (GetContractStateResponse);
   }
 
-  // --- Định nghĩa Cấu trúc Dữ liệu (Messages) ---
-  // Phải định nghĩa lại các struct của Go trong Protobuf
+  
+  
 
   message TxInput {
-    bytes tx_id = 1;        // ID của giao dịch chứa Output
-    int32 vout_index = 2;   // Vị trí (index) của Output
-    bytes signature = 3;    // Chữ ký
-    bytes public_key = 4;   // Public key
+    bytes tx_id = 1;        
+    int32 vout_index = 2;   
+    bytes signature = 3;    
+    bytes public_key = 4;   
   }
 
   message TxOutput {
-    int64 value = 1;          // Số tiền
-    bytes pub_key_hash = 2;   // Hash của Public Key (địa chỉ) khóa
+    int64 value = 1;          
+    bytes pub_key_hash = 2;   
   }
 
   message Transaction {
     bytes id = 1;
-    repeated TxInput vin = 2;   // Danh sách các đầu vào
-    repeated TxOutput vout = 3;  // Danh sách các đầu ra
-    int32 type = 4;    // Tương ứng với domain.TxType
-    bytes payload = 5; // Tương ứng với domain.Payload
+    repeated TxInput vin = 2;   
+    repeated TxOutput vout = 3;  
+    int32 type = 4;    
+    bytes payload = 5; 
   }
 
   message Block {
@@ -64,19 +64,19 @@
     int64 nonce = 5;
   }
 
-  // --- Message cho việc tìm UTXO (gửi tiền) ---
+  
 
   message FindSpendableUTXOsRequest {
     string address = 1;
     int64 amount = 2;
   }
 
-  // Một UTXO có thể tiêu
+  
   message SpendableUTXO {
     bytes tx_id = 1;
     int32 vout_index = 2;
     int64 amount = 3;
-    bytes pub_key_hash = 4; // Cần thiết để xác thực
+    bytes pub_key_hash = 4; 
   }
 
   message FindSpendableUTXOsResponse {
@@ -84,43 +84,43 @@
     repeated SpendableUTXO utxos = 2;
   }
 
-  // --- Định nghĩa Request/Response cho Service ---
+  
 
-  // Message xác nhận (Acknowledgment)
+  
   message Ack {
     bool success = 1;
     string message = 2;
   }
 
-  // Request để lấy block
+  
   message GetBlocksRequest {
-    // Hash của block cuối cùng mà client có
-    // (Nếu rỗng, nghĩa là xin toàn bộ)
+    
+    
     bytes from_hash = 1;
   }
 
-  // Request rỗng (dùng cho GetKnownNodes)
+  
   message EmptyRequest {}
 
-  // Response chứa danh sách các node
+  
   message KnownNodesResponse {
-    repeated string addresses = 1; // ví dụ: "127.0.0.1:3000"
+    repeated string addresses = 1; 
   }
 
   message GetBalanceRequest {
-    string address = 1; // Địa chỉ ví cần kiểm tra
+    string address = 1; 
   }
 
   message GetBalanceResponse {
-    int64 balance = 1; // Số dư trả về
+    int64 balance = 1; 
   }
 
-  // --- Message cho việc đọc State ---
+  
   message GetContractStateRequest {
-    string contract_address = 1; // Địa chỉ contract (dạng hex)
-    string key = 2;              // Key cần đọc
+    string contract_address = 1; 
+    string key = 2;              
   }
 
   message GetContractStateResponse {
-    string value = 1; // Giá trị trả về (dạng string)
+    string value = 1; 
   }

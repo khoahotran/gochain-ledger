@@ -1,25 +1,25 @@
-// Sử dụng cú pháp proto3
+
 syntax = "proto3";
 
-// Import các message (Block, Transaction) từ file proto cũ
+
 import "proto/blockchain.proto";
 
-// Tên package Go sẽ được tạo ra
+
 option go_package = "./proto";
 
 package proto;
 
-// Định nghĩa Dịch vụ Công khai (cho DApp)
+
 service PublicService {
-  // Lấy số dư (giống hệt API cũ)
+  
   rpc GetBalance (GetBalanceRequest) returns (GetBalanceResponse);
 
-  // Đọc state của contract (giống API cũ)
+  
   rpc GetContractState (GetContractStateRequest) returns (GetContractStateResponse);
 
-  // Gửi một giao dịch đã ký (bất kể là Transfer, Deploy hay Call)
+  
   rpc SubmitTransaction (Transaction) returns (Ack);
   
-  // Tìm UTXO có thể tiêu (frontend cần gọi cái này trước khi gửi)
+  
   rpc FindSpendableUTXOs (FindSpendableUTXOsRequest) returns (FindSpendableUTXOsResponse);
 }

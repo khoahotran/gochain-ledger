@@ -1,7 +1,7 @@
 package cmd
 
 import (
-	"encoding/json" // IMPORT MỚI
+	"encoding/json"
 	"errors"
 	"fmt"
 	"log"
@@ -27,7 +27,6 @@ var callCmd = &cobra.Command{
 			Handle(errors.New("Flag --from, --contract, --function, --node là bắt buộc"))
 		}
 
-		// 1. Giải mã (parse) chuỗi JSON args
 		var parsedArgs []interface{}
 		if jsonArgs != "" {
 			err := json.Unmarshal([]byte(jsonArgs), &parsedArgs)
@@ -36,7 +35,6 @@ var callCmd = &cobra.Command{
 			}
 		}
 
-		// 2. Yêu cầu mật khẩu
 		fmt.Printf("Nhập mật khẩu cho ví '%s': ", from)
 		bytePassword, err := term.ReadPassword(int(syscall.Stdin))
 		if err != nil {
@@ -45,13 +43,11 @@ var callCmd = &cobra.Command{
 		password := string(bytePassword)
 		fmt.Println()
 
-		// 3. Tải ví
 		loadedWallet, err := wallet.LoadAndDecrypt(from, password)
 		if err != nil {
 			Handle(err)
 		}
 
-		// 4. Gọi Use Case
 		application.CallContractUseCase(from, contractAddr, funcName, parsedArgs, loadedWallet, nodeAddr)
 	},
 }
